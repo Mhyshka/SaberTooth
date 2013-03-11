@@ -65,7 +65,7 @@ public class MainView extends JFrame{
 	
 	private Controller ctrl;
 	
-	private ActionListener connect, disconnect, login, logout;
+	private ActionListener connect, disconnect, login, logout, send;
 	
 	public MainView(Controller newCtrl) {
 		super();
@@ -141,6 +141,14 @@ public class MainView extends JFrame{
 					public void actionPerformed(ActionEvent arg0) {
 					ctrl.logout();
 				}};
+				
+		send = new ActionListener(){
+
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+			}
+			
+		}
 		this.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
 				ctrl.exit();
@@ -156,6 +164,7 @@ public class MainView extends JFrame{
 		channels.setRootVisible(false);
 		channels.setBorder(UIManager.getBorder("ComboBox.border"));
 		channelsPanel = new JScrollPane(channels);
+		channelsPanel.setMaximumSize(new Dimension(150,1000));
 	}
 	
 	public void initChannelsUserPanel(){
@@ -166,6 +175,7 @@ public class MainView extends JFrame{
 		userChannels.setRootVisible(false);
 		userChannels.setBorder(UIManager.getBorder("ComboBox.border"));
 		channelsUserPanel = new JScrollPane(userChannels);
+		channelsUserPanel.setMaximumSize(new Dimension(150,1000));
 	}
 	
 	public void initChatPanel(){
@@ -264,6 +274,7 @@ public class MainView extends JFrame{
 																.addComponent(channelsUserPanel)
 																.addGap(5));
 		leftPanel.setLayout(layout);
+		leftPanel.setMaximumSize(new Dimension(50,0));
 	}
 	
 	public void initLoginPanel(){
@@ -422,6 +433,7 @@ public class MainView extends JFrame{
 		layout.setAlignment(FlowLayout.LEFT);
 		toolPanel.setLayout(layout);
 		toolPanel.add(toolbar);
+		toolPanel.setMaximumSize(new Dimension(150,55));
 	}
 	
 	public void initTopPanel(){
