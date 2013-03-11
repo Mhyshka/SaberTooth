@@ -46,7 +46,7 @@ public class MainView extends JFrame{
 	private JTabbedPane chatPanel;
 	private JScrollPane channelsPanel, channelsUserPanel, usersPanel;
 	
-	private JTextField txtServerIp, txtServerPort, txtNickname;
+	private JTextField txtServerIp, txtServerPort, txtNickname, txtMessage;
 	private JLabel lbServerName;
 	
 	private JMenuBar menuBar;
@@ -139,10 +139,14 @@ public class MainView extends JFrame{
 		send = new ActionListener(){
 
 			@Override
-			public void actionPerformed(ActionEvent arg0) {
+			public void actionPerformed(ActionEvent arg0){
+				// TODO Recup de l'id du chan.
+				long chanId = 1;
+				ctrl.sendMessage(txtMessage.getText(),chanId);
+				txtMessage.setText("");
 			}
 			
-		}
+		};
 		this.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
 				ctrl.exit();
@@ -355,11 +359,12 @@ public class MainView extends JFrame{
 	
 	public void initMessagePanel(){
 		btnSend = new JButton("Send");
+		txtMessage = new JTextField("");
 		BorderLayout layout = new BorderLayout(5, 5);
 		
 		messagePanel = new JPanel();
 		messagePanel.setLayout(layout);
-		messagePanel.add(new JTextField("Message"), BorderLayout.CENTER);
+		messagePanel.add(txtMessage, BorderLayout.CENTER);
 		messagePanel.add(btnSend, BorderLayout.EAST);
 		messagePanel.setPreferredSize(new Dimension(0,20));
 	}
@@ -400,6 +405,9 @@ public class MainView extends JFrame{
 		btnConnect.removeActionListener(disconnect);
 		btnConnect.addActionListener(connect);
 		btnConnect.setEnabled(true);
+		
+		btnSend.removeActionListener(send);
+		btnSend.addActionListener(send);
 		
 		btnLogin.setText("Login");
 		txtServerIp.setEnabled(true);

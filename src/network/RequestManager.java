@@ -20,6 +20,7 @@ import com.google.gson.JsonParser;
 import data.Channel;
 import data.ChannelGroup;
 import data.ChannelTree;
+import data.Message;
 import data.Request;
 import data.User;
 
@@ -94,6 +95,11 @@ public class RequestManager {
 		}
 		
 		private void readChannels(Request request){
+			boolean joinning = false;
+			if(ctrl.getChannels().isEmpty())
+				joinning = true;
+			long welcomeChanId = 1;
+			
 			Channel ch;
 			ChannelGroup gCh;
 			HashMap<Long,ChannelTree> chTree = new HashMap<Long, ChannelTree>();
@@ -111,6 +117,9 @@ public class RequestManager {
 				}
 			}
 			ctrl.setChannels(chTree);
+			if(joinning && ctrl.getChannels().containsKey(welcomeChanId)){
+				sendJoinned(welcomeChanId);
+			}
 		}
 		
 		private void readLogin(Request request){
@@ -133,7 +142,7 @@ public class RequestManager {
 		}
 		
 		private void readMessage(Request request){
-			
+			ctrl.error("message", request.getContent(), 0);
 		}
 		
 		private void readPassword(Request request){
@@ -145,6 +154,7 @@ public class RequestManager {
 		}
 		
 		private void readJoinned(Request request){
+			ctrl.error("joinned", request.getContent(),0);
 			String args[] = request.getContent().split("&");
 			long id = Long.parseLong(args[1]);
 			ctrl.joinChannel(args[0],id);
@@ -362,5 +372,17 @@ public class RequestManager {
 		}
 		outputThread = null;
 		inputThread = null;
+	}
+
+	public void sendMessage(Message message) {
+		sendRequest(new Request("message",new Gson().toJson(message),""));
+	}
+	
+	public void sendChannels(){
+		sendRequest(new Request("channels","",""));
+	}
+	
+	public void sendJoinned(long channelId){
+		sendRequest(new Request("joinned",""+channelId,""));
 	}
 }

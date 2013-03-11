@@ -9,6 +9,7 @@ import network.ConnectionManager;
 import network.RequestManager;
 import view.MainView;
 import data.ChannelTree;
+import data.Message;
 import data.User;
 
 public class Controller {
@@ -21,7 +22,6 @@ public class Controller {
 	private ConnectionManager connectionManager;
 	private RequestManager requestManager;
 	private ChannelManager channelManager;
-	private User user;
 
 	public Controller(){
 		mainView = new MainView(this);
@@ -175,5 +175,17 @@ public class Controller {
 	
 	public User getUser(){
 		return channelManager.getUser();
+	}
+	
+	public void sendMessage(String text, long channelId){
+		Message message = new Message(getUser().getUsername(),channelId, text);
+		message.setBold(getUser().isBold());
+		message.setColor(getUser().getColor());
+		message.setItalic(getUser().isItalic());
+		
+		requestManager.sendMessage(message);
+	}
+	public void sendChannels(){
+		requestManager.sendChannels();
 	}
 }

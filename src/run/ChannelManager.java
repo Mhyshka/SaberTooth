@@ -30,18 +30,31 @@ public class ChannelManager {
 		System.out.println("Channel Service - initialized.");
 	}
 	
-	/*public void addUserChannel(long newChannelId){
-		if(!getUserChannels().contains(newChannelId)){
-			getUserChannels().add(newChannelId);
-			getChannel(newChannelId)
-			if(channelTree.containsKey(newChannelId)){
-				
-			}
-			else{
-				ctrl.missingChannel();
-			}
+	public void joinChannel(String username, long channelId){
+		if(username.equals(getUser().getUsername())){
+			getUser().addChannel(channelId);
+			
 		}
-	}*/
+		if(getChannels().containsKey(channelId)){
+			((Channel)getChannel(channelId)).addUser(username);
+		}
+		else{
+			ctrl.sendChannels();
+		}
+	}
+	
+	public void leaveChannel(String username, long channelId){
+		if(username.equals(getUser().getUsername())){
+			getUser().removeChannel(channelId);
+			
+		}
+		if(getChannels().containsKey(channelId)){
+			((Channel)getChannel(channelId)).removeUser(username);
+		}
+		else{
+			ctrl.sendChannels();
+		}
+	}
 	
 	public ChannelTree getChannel(long id){
 		return channelTree.get(id);
@@ -52,24 +65,32 @@ public class ChannelManager {
 	}
 	
 	public Vector<Long> getUserChannels(){
-		return ctrl.getUser().getChannels();
+		return getUser().getChannels();
 	}
 	
-	private void newChannel(ChannelTree newChannel){
+	public void newChannel(ChannelTree newChannel){
 		channelTree.put(newChannel.getId(), newChannel);
 		ctrl.updateChannels();
 	}
 	
-	private void removeChannel(ChannelTree rmChannel){
+	public void removeChannel(ChannelTree rmChannel){
 		if(rmChannel instanceof Channel){
 			channelTree.remove(rmChannel.getId());
 			ctrl.updateChannels();
 		}
 	}
 	
+	public void newUserChannel(long newChannelId){
+		if(!getUserChannels().contains(newChannelId)){
+			getUserChannels().add(newChannelId);
+			ctrl.updateUserChannels();
+		}
+	}
+	
 	public void removeUserChannel(long rmChannelId){
 		if(getUserChannels().contains(rmChannelId)){
 			getUserChannels().removeElement(rmChannelId);
+			ctrl.updateUserChannels();
 		}
 	}
 	
@@ -91,7 +112,7 @@ public class ChannelManager {
 	}
 	
 	public void setUserChannels(Vector<Long> channelsId){
-		ctrl.getUser().setChannels(channelsId);
+		getUser().setChannels(channelsId);
 		ctrl.updateUserChannels();
 	}
 	
