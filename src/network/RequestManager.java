@@ -99,6 +99,7 @@ public class RequestManager {
 			if(ctrl.getChannels().isEmpty())
 				joinning = true;
 			long welcomeChanId = 1;
+			// TODO Appel à la variable channel de welcome recupéré dans readWelcome();
 			
 			Channel ch;
 			ChannelGroup gCh;
@@ -154,7 +155,6 @@ public class RequestManager {
 		}
 		
 		private void readJoinned(Request request){
-			ctrl.error("joinned", request.getContent(),0);
 			String args[] = request.getContent().split("&");
 			long id = Long.parseLong(args[1]);
 			ctrl.joinChannel(args[0],id);
@@ -165,6 +165,12 @@ public class RequestManager {
 		}
 		
 		private void readWelcome(Request request){
+			if(logged){
+				ctrl.resetUser();
+				ctrl.resetChannels();
+				ctrl.closeAllChannelViews();
+			}
+			// TODO gestion du channel de welcome du server.
 			logged = false;
 			ctrl.welcome(request.getContent());
 		}
@@ -384,5 +390,9 @@ public class RequestManager {
 	
 	public void sendJoinned(long channelId){
 		sendRequest(new Request("joinned",""+channelId,""));
+	}
+	
+	public void sendLeft(long channelId){
+		sendRequest(new Request("left",""+channelId,""));
 	}
 }

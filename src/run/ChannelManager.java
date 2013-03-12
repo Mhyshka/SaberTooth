@@ -31,12 +31,13 @@ public class ChannelManager {
 	}
 	
 	public void joinChannel(String username, long channelId){
-		if(username.equals(getUser().getUsername())){
-			getUser().addChannel(channelId);
-			
-		}
 		if(getChannels().containsKey(channelId)){
+			if(username.equals(getUser().getUsername())){
+				getUser().addChannel(channelId);
+			}
 			((Channel)getChannel(channelId)).addUser(username);
+			ctrl.updateUserChannels();
+			ctrl.openChannelView(channelId);
 		}
 		else{
 			ctrl.sendChannels();
@@ -44,12 +45,14 @@ public class ChannelManager {
 	}
 	
 	public void leaveChannel(String username, long channelId){
-		if(username.equals(getUser().getUsername())){
-			getUser().removeChannel(channelId);
-			
-		}
 		if(getChannels().containsKey(channelId)){
+			if(username.equals(getUser().getUsername())){
+				getUser().removeChannel(channelId);
+				
+			}
 			((Channel)getChannel(channelId)).removeUser(username);
+			ctrl.updateUserChannels();
+			ctrl.closeChannelView(channelId);
 		}
 		else{
 			ctrl.sendChannels();
@@ -122,5 +125,16 @@ public class ChannelManager {
 	
 	public User getUser(){
 		return user;
+	}
+	
+	public void reset(){
+		channelTree = new HashMap<Long, ChannelTree>();
+		if(getUser()!=null)
+			getUser().setChannels(new Vector<Long>());
+		ctrl.resetJTrees();
+	}
+	
+	public void resetUser(){
+		user = null;
 	}
 }

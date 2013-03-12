@@ -146,7 +146,7 @@ public class Controller {
 	}
 	
 	public void updateUserChannels(){
-		//mainView.updateUserChannels();
+		mainView.updateUserChannels(getChannels(),getUser().getChannels());
 	}
 	
 	public ChannelTree getChannel(long id){
@@ -162,11 +162,11 @@ public class Controller {
 	}
 	
 	public void joinChannel(String username, long channelId){
-		//channelManager.joinChannel(username, channelId);
+		channelManager.joinChannel(username, channelId);
 	}
 	
 	public void leaveChannel(String username, long channelId){
-		//channelManager.leaveChannel(username, channelId);
+		channelManager.leaveChannel(username, channelId);
 	}
 	
 	public void setUser(User user){
@@ -187,5 +187,37 @@ public class Controller {
 	}
 	public void sendChannels(){
 		requestManager.sendChannels();
+	}
+	
+	public void sendJoinned(long channelId){
+		requestManager.sendJoinned(channelId);
+	}
+	
+	public void sendLeft(long channelId){
+		requestManager.sendLeft(channelId);
+	}
+	
+	public void resetChannels(){
+		channelManager.reset();
+	}
+	
+	public void resetJTrees(){
+		mainView.resetJTrees();
+	}
+	
+	public void openChannelView(long channelId){
+		mainView.openChannelView(channelId);
+	}
+	
+	public void closeChannelView(long channelId){
+		mainView.closeChannelView(channelId);
+	}
+	
+	public void closeAllChannelViews(){
+		mainView.closeAllChannelViews();
+	}
+	
+	public void resetUser(){
+		channelManager.resetUser();
 	}
 }

@@ -11,6 +11,7 @@ import java.awt.event.FocusListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.HashMap;
+import java.util.Vector;
 
 import javax.swing.GroupLayout;
 import javax.swing.ImageIcon;
@@ -27,6 +28,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
+import javax.swing.JTextPane;
 import javax.swing.JToolBar;
 import javax.swing.JTree;
 import javax.swing.SwingConstants;
@@ -49,6 +51,8 @@ public class MainView extends JFrame{
 	private JTextField txtServerIp, txtServerPort, txtNickname, txtMessage;
 	private JLabel lbServerName;
 	
+	private HashMap<Long,JTextPane> channelViews;
+	
 	private JMenuBar menuBar;
 	private JMenu mnRemoveChannel;
 	
@@ -65,6 +69,7 @@ public class MainView extends JFrame{
 		super();
 		ctrl = newCtrl;
 		frame = this;
+		channelViews = new HashMap<Long,JTextPane>();
 
 		initFrame();
 		initActionListener();
@@ -517,10 +522,10 @@ public class MainView extends JFrame{
 		((DefaultTreeModel)channels.getModel()).setRoot(root);
 	}
 	
-	public void updateUserChannels(HashMap<Long, ChannelTree> chTree){
+	public void updateUserChannels(HashMap<Long, ChannelTree> chTree, Vector<Long> channels){
 		DefaultMutableTreeNode root = null;
 		root = new DefaultMutableTreeNode("root");
-		for(long id : ((ChannelGroup)ctrl.getChannel(0)).getChildren()){
+		for(long id : channels){
 			newNode(root, ctrl.getChannel(id));
 		}
 		((DefaultTreeModel)userChannels.getModel()).setRoot(root);
@@ -540,5 +545,30 @@ public class MainView extends JFrame{
 			DefaultMutableTreeNode node = new DefaultMutableTreeNode(ch.getName());
 			parent.add(node);
 		}
+	}
+	
+	public void resetJTrees(){
+		((DefaultTreeModel)userChannels.getModel()).setRoot(new DefaultMutableTreeNode("root"));
+		((DefaultTreeModel)channels.getModel()).setRoot(new DefaultMutableTreeNode("root"));
+	}
+	
+	public void openChannelView(long channelId){
+		if(!channelViews.containsKey(channelId)){
+			Channel chan = (Channel)ctrl.getChannel(channelId);
+			channelViews.put(channelId,new JTextPane());
+			chatPanel.add(channelViews.get(channelId));
+		}
+	}
+	
+	public void closeChannelView(long channelId){
+		if(channelViews.containsKey(channelId)){
+			chatPanel.remove(channelViews.get(channelId));
+			channelViews.remove(channelId);	
+		}
+	}
+	
+	public void closeAllChannelViews(){
+		for(long id : channelViews.keySet())
+			chatPanel.remove(channelViews.get(id));
 	}
 }
