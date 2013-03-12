@@ -8,6 +8,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.HashMap;
@@ -32,6 +34,7 @@ import javax.swing.JTextPane;
 import javax.swing.JToolBar;
 import javax.swing.JTree;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
@@ -75,6 +78,18 @@ public class MainView extends JFrame{
 		initActionListener();
 		initState();
 		frame.setMinimumSize(new Dimension(620,600));
+	}
+	
+	public void closeAllChannelViews(){
+		for(long id : channelViews.keySet())
+			chatPanel.remove(channelViews.get(id));
+	}
+	
+	public void closeChannelView(long channelId){
+		if(channelViews.containsKey(channelId)){
+			chatPanel.remove(channelViews.get(channelId));
+			channelViews.remove(channelId);	
+		}
 	}
 	
 	public void connectedState(){
@@ -174,7 +189,7 @@ public class MainView extends JFrame{
 		DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode("Root Node");
 		DefaultTreeModel treeModel = new DefaultTreeModel(rootNode);
 		
-		userChannels = new JTree(rootNode);
+		userChannels = new JTree(treeModel);
 		userChannels.setRootVisible(false);
 		userChannels.setBorder(UIManager.getBorder("ComboBox.border"));
 		channelsUserPanel = new JScrollPane(userChannels);
@@ -391,6 +406,22 @@ public class MainView extends JFrame{
 		midPanel.setLayout(layout);
 	}
 	
+	public void initRightPanel(){
+		initUsersPanel();
+		
+		rightPanel = new JPanel();
+		GroupLayout layout = new GroupLayout(rightPanel);
+		layout.setHorizontalGroup(layout.createSequentialGroup().addGap(5)
+																.addComponent(usersPanel)
+																.addGap(5));
+		layout.setVerticalGroup(layout.createSequentialGroup().addGap(5)
+																.addComponent(usersPanel)
+																.addGap(5));
+		rightPanel.setLayout(layout);
+		rightPanel.setPreferredSize(new Dimension(150,-1));
+		rightPanel.setMaximumSize(new Dimension(150,-1));
+	}
+	
 	public void initServerNamePanel(){
 		lbServerName = new JLabel("");
 		lbServerName.setFont(new Font("Tahoma", Font.BOLD, 15));
@@ -403,7 +434,6 @@ public class MainView extends JFrame{
 		serverNamePanel.setLayout(layout);
 		serverNamePanel.add(lbServerName);
 	}
-	
 	public void initState(){
 		btnConnect.setText("Connect");
 		btnConnect.removeActionListener(connect);
@@ -460,23 +490,10 @@ public class MainView extends JFrame{
 	
 		topPanel.setLayout(layout);
 	}
-	public void initRightPanel(){
-		initUsersPanel();
-		
-		rightPanel = new JPanel();
-		GroupLayout layout = new GroupLayout(rightPanel);
-		layout.setHorizontalGroup(layout.createSequentialGroup().addGap(5)
-																.addComponent(usersPanel)
-																.addGap(5));
-		layout.setVerticalGroup(layout.createSequentialGroup().addGap(5)
-																.addComponent(usersPanel)
-																.addGap(5));
-		rightPanel.setLayout(layout);
-		rightPanel.setPreferredSize(new Dimension(150,-1));
-		rightPanel.setMaximumSize(new Dimension(150,-1));
-	}
 	
 	public void initUsersPanel(){
+		// TODO
+		// Initialisé la liste des users proprement.
 		users = new JList();
 		users.setBorder(UIManager.getBorder("ComboBox.border"));
 		
@@ -496,7 +513,7 @@ public class MainView extends JFrame{
 		
 		txtNickname.setEnabled(false);
 	}
-	
+
 	public void loggingState(){
 		btnConnect.removeActionListener(disconnect);
 		btnConnect.removeActionListener(connect);
@@ -509,28 +526,6 @@ public class MainView extends JFrame{
 		txtNickname.setEnabled(false);
 	}
 	
-	public void setServerName(String name){
-		lbServerName.setText(name);
-	}
-
-	public void updateChannels(HashMap<Long, ChannelTree> chTree) {
-		DefaultMutableTreeNode root = null;
-		root = new DefaultMutableTreeNode("root");
-		for(long id : ((ChannelGroup)ctrl.getChannel(0)).getChildren()){
-			newNode(root, ctrl.getChannel(id));
-		}
-		((DefaultTreeModel)channels.getModel()).setRoot(root);
-	}
-	
-	public void updateUserChannels(HashMap<Long, ChannelTree> chTree, Vector<Long> channels){
-		DefaultMutableTreeNode root = null;
-		root = new DefaultMutableTreeNode("root");
-		for(long id : channels){
-			newNode(root, ctrl.getChannel(id));
-		}
-		((DefaultTreeModel)userChannels.getModel()).setRoot(root);
-	}
-	
 	private void newNode(DefaultMutableTreeNode parent, ChannelTree chTree){
 		if(chTree instanceof ChannelGroup){
 			ChannelGroup group = (ChannelGroup)chTree;
@@ -540,10 +535,21 @@ public class MainView extends JFrame{
 				newNode(node, ctrl.getChannel(id));
 			}
 		}
-		else{
+		else if(chTree instanceof Channel){
 			Channel ch = (Channel)chTree;
 			DefaultMutableTreeNode node = new DefaultMutableTreeNode(ch.getName());
 			parent.add(node);
+		}
+	}
+	
+	public void openChannelView(long channelId){
+		if(!channelViews.containsKey(channelId)){
+			// TODO
+			// Réglage de la fenetre en fonction des infos dont on dispose.
+			
+			//Channel chan = (Channel)ctrl.getChannel(channelId); // A décommenter pour enlever les warnings.
+			channelViews.put(channelId,new JTextPane());
+			chatPanel.add(channelViews.get(channelId));
 		}
 	}
 	
@@ -552,23 +558,59 @@ public class MainView extends JFrame{
 		((DefaultTreeModel)channels.getModel()).setRoot(new DefaultMutableTreeNode("root"));
 	}
 	
-	public void openChannelView(long channelId){
-		if(!channelViews.containsKey(channelId)){
-			Channel chan = (Channel)ctrl.getChannel(channelId);
-			channelViews.put(channelId,new JTextPane());
-			chatPanel.add(channelViews.get(channelId));
-		}
+	public void setServerName(String name){
+		lbServerName.setText(name);
 	}
 	
-	public void closeChannelView(long channelId){
-		if(channelViews.containsKey(channelId)){
-			chatPanel.remove(channelViews.get(channelId));
-			channelViews.remove(channelId);	
+	public void updateChannels() {
+		DefaultMutableTreeNode root = null;
+		root = new DefaultMutableTreeNode("root");
+		for(long id : ((ChannelGroup)ctrl.getChannel(0)).getChildren()){
+			newNode(root, ctrl.getChannel(id));
 		}
+		((DefaultTreeModel)channels.getModel()).setRoot(root);
+		channels.addMouseListener(new MouseAdapter(){
+			@Override
+			public void mouseReleased(MouseEvent event){
+				if(SwingUtilities.isLeftMouseButton(event) && event.getClickCount()==1){
+					// TODO recupération des events des channels
+					// Afficher les users de ce chan ou de ce changroup.
+				}
+				else if(SwingUtilities.isLeftMouseButton(event) && event.getClickCount()==1){
+					// TODO
+					// Rejoindre le chan et/ou ouvrir le
+				}
+				else if(SwingUtilities.isRightMouseButton(event)){
+					// TODO
+					// Ouvrir un menu pour quitter le chan, le rejoindre, afficher ses infos, le supprimer, le donner etc...
+				}
+			}
+		});
 	}
 	
-	public void closeAllChannelViews(){
-		for(long id : channelViews.keySet())
-			chatPanel.remove(channelViews.get(id));
+	public void updateUserChannels(Vector<Long> channels){
+		DefaultMutableTreeNode root = null;
+		root = new DefaultMutableTreeNode("root");
+		for(long id : channels){
+			newNode(root, ctrl.getChannel(id));
+		}
+		((DefaultTreeModel)userChannels.getModel()).setRoot(root);
+		userChannels.addMouseListener(new MouseAdapter(){
+			@Override
+			public void mouseReleased(MouseEvent event){
+				if(SwingUtilities.isLeftMouseButton(event) && event.getClickCount()==1){
+					// TODO recupération des events des channels
+					// Afficher les users de ce chan ou de ce changroup.
+				}
+				else if(SwingUtilities.isLeftMouseButton(event) && event.getClickCount()==1){
+					// TODO
+					// Ouvrir la fenetre du chan
+				}
+				else if(SwingUtilities.isRightMouseButton(event)){
+					// TODO
+					// Ouvrir un menu pour quitter le chan, afficher ses infos, le supprimer, le donner etc...
+				}
+			}
+		});
 	}
 }

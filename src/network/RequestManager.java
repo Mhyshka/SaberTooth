@@ -90,8 +90,27 @@ public class RequestManager {
 					readShutdown(request);
 				break;
 				
+				case "newchannel":
+					readNewChannel(request);
+				break;
+				
+				case "rmchannel":
+					readRmChannel(request);
+				break;
+				
 				default : ctrl.error("Request Error", "Request Service Error - Unkown message type :" + request.getType(), 1);
 			}
+		}
+		
+		private void readNewChannel(Request request){
+			Channel channel = gson.fromJson(request.getContent(), Channel.class);
+			channel.setParent(((ChannelGroup)ctrl.getChannel(channel.getParent().getId())));
+			ctrl.newChannel(channel);
+		}
+		
+		private void readRmChannel(Request request){
+			long id = Long.parseLong(request.getContent());
+			ctrl.removeChannel(id);
 		}
 		
 		private void readChannels(Request request){
@@ -123,13 +142,23 @@ public class RequestManager {
 			}
 		}
 		
+		private void readJoinned(Request request){
+			String args[] = request.getContent().split("&");
+			long id = Long.parseLong(args[1]);
+			ctrl.joinChannel(args[0],id);
+		}
+		
+		private void readLeft(Request request){
+			// TODO gestion deconnexion d'un chan.
+		}
+		
 		private void readLogin(Request request){
 			String args[] = request.getContent().split("&");
 			switch(args[0]){
-				case "user" : ctrl.error("Username error", "This username is already in use.", 1);
+				case "user" : ctrl.usernameUsed();
 				break;
 				
-				case "banned" : ctrl.error("Connection Error", "You're banned.", 1);
+				case "banned" : ctrl.bannedIp();
 				break;
 				
 				case "success" : 
@@ -142,26 +171,20 @@ public class RequestManager {
 			}
 		}
 		
+		private void readLogout(Request request){
+			ctrl.kicked(request.getContent());
+		}
+		
 		private void readMessage(Request request){
-			ctrl.error("message", request.getContent(), 0);
+			ctrl.newMessage(gson.fromJson(request.getContent(), Message.class));
 		}
 		
 		private void readPassword(Request request){
-			
+			// TODO gestion demande de password
 		}
 		
-		private void readLogout(Request request){
-			
-		}
-		
-		private void readJoinned(Request request){
-			String args[] = request.getContent().split("&");
-			long id = Long.parseLong(args[1]);
-			ctrl.joinChannel(args[0],id);
-		}
-		
-		private void readLeft(Request request){
-			
+		private void readShutdown(Request request){
+			ctrl.serverShutdown(request.getContent());
 		}
 		
 		private void readWelcome(Request request){
@@ -173,10 +196,6 @@ public class RequestManager {
 			// TODO gestion du channel de welcome du server.
 			logged = false;
 			ctrl.welcome(request.getContent());
-		}
-		
-		private void readShutdown(Request request){
-			ctrl.serverShutdown(request.getContent());
 		}
 		
 		@Override
@@ -235,6 +254,14 @@ public class RequestManager {
 			closing = false;
 		}
 		
+		public boolean isClosing(){
+			return closing;
+		}
+		
+		public boolean isStacked(){
+			return !stack.isEmpty();
+		}
+		
 		@Override
 		public void run(){
 			while(running){
@@ -277,14 +304,6 @@ public class RequestManager {
 		public void turnOff(){
 			running = false;
 		}
-		
-		public boolean isClosing(){
-			return closing;
-		}
-		
-		public boolean isStacked(){
-			return !stack.isEmpty();
-		}
 	}
 	
 	/*******************************
@@ -293,12 +312,6 @@ public class RequestManager {
 	
 	
 	private static RequestManager manager;
-	private InputThread inputThread;
-	private OutputThread outputThread;
-	private Controller ctrl;
-	private boolean logged;
-	
-	
 	public static RequestManager getInstance(Controller newCtrl){
 		if(manager != null)
 			return manager;
@@ -307,6 +320,11 @@ public class RequestManager {
 			return manager;
 		}
 	}
+	private InputThread inputThread;
+	private OutputThread outputThread;
+	private Controller ctrl;
+	
+	private boolean logged;
 	
 	public RequestManager(Controller newCtrl){
 		ctrl = newCtrl;
@@ -314,27 +332,16 @@ public class RequestManager {
 		System.out.println("Request Service - Initialized.");
 	}
 	
-	public void initConnection(){
-		inputThread = new InputThread(ctrl.getSocket());
-		outputThread = new OutputThread(ctrl.getSocket());
-		inputThread.start();
-		outputThread.start();
-	}
-	
-	public void sendRequest(Request request){
-		outputThread.stackRequest(request);
-	}
-	
-	public boolean isLogged(){
-		return logged;
-	}
-	
-	public void login(String username){
-		sendRequest(new Request("login",username,""));
-	}
-	
-	public void logout(){
-		sendRequest(new Request("logout","",""));
+	public void close(){
+		outputThread.turnOff();
+		inputThread.turnOff();
+		try {
+			Thread.sleep(100);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		outputThread = null;
+		inputThread = null;
 	}
 	
 	public void disconnect(){
@@ -360,39 +367,65 @@ public class RequestManager {
 		outputThread = null;
 	}
 	
+	public void initConnection(){
+		inputThread = new InputThread(ctrl.getSocket());
+		outputThread = new OutputThread(ctrl.getSocket());
+		inputThread.start();
+		outputThread.start();
+	}
+	
 	public boolean isInit(){
 		return (inputThread != null && outputThread != null);
+	}
+	
+	public boolean isLogged(){
+		return logged;
 	}
 	
 	public boolean isStacked(){
 		return outputThread.isStacked();
 	}
 	
-	public void close(){
-		outputThread.turnOff();
-		inputThread.turnOff();
-		try {
-			Thread.sleep(100);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-		outputThread = null;
-		inputThread = null;
+	public void sendLogin(String username){
+		sendRequest(new Request("login",username,""));
 	}
-
-	public void sendMessage(Message message) {
-		sendRequest(new Request("message",new Gson().toJson(message),""));
+	
+	public void sendLogout(){
+		sendRequest(new Request("logout","",""));
 	}
 	
 	public void sendChannels(){
 		sendRequest(new Request("channels","",""));
 	}
-	
+
 	public void sendJoinned(long channelId){
 		sendRequest(new Request("joinned",""+channelId,""));
 	}
 	
 	public void sendLeft(long channelId){
 		sendRequest(new Request("left",""+channelId,""));
+	}
+	
+	public void sendMessage(Message message) {
+		sendRequest(new Request("message",new Gson().toJson(message),""));
+	}
+	
+	public void sendRequest(Request request){
+		outputThread.stackRequest(request);
+	}
+	
+	public void sendNewChannel(Channel newChannel){
+		Request request = new Request("newchannel",new Gson().toJson(newChannel),"");
+		sendRequest(request);
+	}
+	
+	public void sendRmChannel(long channelId){
+		Request request = new Request("rmchannel",""+channelId,"");
+		sendRequest(request);
+	}
+
+	public void sendNewChannel(ChannelTree newChannel) {
+		Request request = new Request("newchannel",new Gson().toJson(newChannel),"");
+		sendRequest(request);
 	}
 }

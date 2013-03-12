@@ -25,7 +25,9 @@ public class ConnectionManager {
 				try {
 					socket.setReuseAddress(true);
 				} catch (SocketException e) {
-					// TODO Auto-generated catch block
+					// TODO
+					// Apparait lorsque le port est déjà utilisé par 
+					// exemple : le server et le client lancé sur le même PC essayant de se connecter sur 127.0.0.1.
 					e.printStackTrace();
 				}
 				socket.connect(new InetSocketAddress(address, port), 5000);
