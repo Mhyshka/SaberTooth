@@ -2,6 +2,7 @@ package run;
 
 import java.net.Socket;
 import java.util.HashMap;
+import java.util.Vector;
 
 import javax.swing.JOptionPane;
 
@@ -121,14 +122,18 @@ public class Controller {
 		return connectionManager.isConnected();
 	}
 	
+	public boolean isLinkedToChannel(long channelId) {
+		return channelManager.isLinkedToChannel(channelId);
+	}
+	
 	public boolean isLogged(){
 		return requestManager.isLogged();
 	}
-	
-	public void joinChannel(String username, long channelId){
-		channelManager.joinChannel(username, channelId);
-	}
 
+	public void joinChannel(String username, long channelId){
+		channelManager.linkUserToChannel(username, channelId);
+	}
+	
 	public void kicked(String reason){
 		if(reason.isEmpty())
 			reason = "No reason was given.";
@@ -138,7 +143,11 @@ public class Controller {
 	}
 	
 	public void leaveChannel(String username, long channelId){
-		channelManager.leaveChannel(username, channelId);
+		channelManager.unlinkUserToChannel(username, channelId);
+	}
+	
+	public Vector<String> listUsernames(long channelId) {
+		return channelManager.listUsernames(channelId);
 	}
 	
 	public void login(String username){
@@ -187,7 +196,6 @@ public class Controller {
 	public void resetUser(){
 		channelManager.resetUser();
 	}
-	
 	public void sendChannels(){
 		requestManager.sendChannels();
 	}
@@ -195,6 +203,7 @@ public class Controller {
 	public void sendJoinned(long channelId){
 		requestManager.sendJoinned(channelId);
 	}
+	
 	public void sendLeft(long channelId){
 		requestManager.sendLeft(channelId);
 	}
@@ -236,11 +245,24 @@ public class Controller {
 	public void updateChannels(){
 		mainView.updateChannels();
 	}
-	
+
 	public void updateUserChannels(){
 		mainView.updateUserChannels(getUser().getChannels());
 	}
-	
+
+	public void updateUsersList(long channelId) {
+		boolean parent = false;
+		ChannelTree chan = getChannel(channelId);
+		while(chan.getParent()!= null && !parent){
+			if(chan.getParent().getId() == mainView.getSelectedChannelId())
+				parent = true;
+			else
+				chan = chan.getParent();
+		}
+		if(parent || mainView.getSelectedChannelId() == channelId || mainView.getSelectedChannelId() == 0)
+			mainView.updateUsers(listUsernames(mainView.getSelectedChannelId()));
+	}
+
 	public void usernameUsed(){
 		error("Login error","The username you choose is already in use." , 1);
 		mainView.initState();

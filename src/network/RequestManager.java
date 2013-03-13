@@ -149,7 +149,9 @@ public class RequestManager {
 		}
 		
 		private void readLeft(Request request){
-			// TODO gestion deconnexion d'un chan.
+			String args[] = request.getContent().split("&");
+			long id = Long.parseLong(args[1]);
+			ctrl.leaveChannel(args[0],id);
 		}
 		
 		private void readLogin(Request request){

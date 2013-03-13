@@ -1,5 +1,6 @@
 package run;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Vector;
 
@@ -46,33 +47,54 @@ public class ChannelManager {
 		return getUser().getChannels();
 	}
 	
-	public void joinChannel(String username, long channelId){
+	public boolean isLinkedToChannel(long channelId) {
+		return user.getChannels().contains(channelId);
+	}
+	
+	public void linkUserToChannel(String username, long channelId){
 		if(getChannels().containsKey(channelId)){
 			if(username.equals(getUser().getUsername())){
 				getUser().addChannel(channelId);
+				ctrl.openChannelView(channelId);
 			}
 			((Channel)getChannel(channelId)).addUser(username);
 			ctrl.updateUserChannels();
-			ctrl.openChannelView(channelId);
+			ctrl.updateUsersList(channelId);
 		}
 		else{
 			ctrl.sendChannels();
 		}
 	}
 	
-	public void leaveChannel(String username, long channelId){
+	public void unlinkUserToChannel(String username, long channelId){
 		if(getChannels().containsKey(channelId)){
 			if(username.equals(getUser().getUsername())){
 				getUser().removeChannel(channelId);
-				
+				ctrl.closeChannelView(channelId);
 			}
 			((Channel)getChannel(channelId)).removeUser(username);
 			ctrl.updateUserChannels();
-			ctrl.closeChannelView(channelId);
+			ctrl.updateUsersList(channelId);
 		}
 		else{
 			ctrl.sendChannels();
 		}
+	}
+	
+	public Vector<String> listUsernames(long channelId) {
+		Vector<String> usernames;
+		if(getChannel(channelId) instanceof ChannelGroup){
+			usernames = new Vector<String>();
+			ChannelGroup cg = (ChannelGroup)getChannel(channelId);
+			for(long id : cg.getChildren()){
+				vectorUsers(id,usernames);
+			}
+		}
+		else{
+			usernames = ((Channel)getChannel(channelId)).getUsers();
+		}
+		Collections.sort(usernames);
+		return usernames;
 	}
 	
 	public void newChannel(ChannelTree newChannel){
@@ -109,15 +131,6 @@ public class ChannelManager {
 			ctrl.sendLeft(channelId);
 	}
 	
-	/*public void removeChannel(ChannelTree rmChannel){
-		if(rmChannel instanceof Channel){
-			if(channelTree.remove(rmChannel.getId()) != null){
-				removeUserChannel(rmChannel.getId());
-				ctrl.updateChannels();
-			}
-		}
-	}*/
-	
 	public void removeUserChannel(long rmChannelId){
 		if(getUserChannels().contains(rmChannelId)){
 			getUserChannels().removeElement(rmChannelId);
@@ -152,7 +165,7 @@ public class ChannelManager {
 		channelTree = chTree;
 		ctrl.updateChannels();
 	}
-	
+
 	public void setUser(User user){
 		this.user = user;
 	}
@@ -160,5 +173,24 @@ public class ChannelManager {
 	public void setUserChannels(Vector<Long> channelsId){
 		getUser().setChannels(channelsId);
 		ctrl.updateUserChannels();
+	}
+	
+	private void vectorUsers(long chanId, Vector<String> users){
+		ChannelTree ct = getChannel(chanId);
+		if(ct instanceof ChannelGroup){
+			ChannelGroup cg = (ChannelGroup)ct;
+			for(long id : cg.getChildren()){
+				vectorUsers(id,users);
+			}
+		}
+		else{
+			Channel ch = (Channel)ct;
+			Vector<String>chUsers = ch.getUsers();
+			for(String username : chUsers){
+				if(!users.contains(username)){
+					users.add(username);
+				}
+			}
+		}
 	}
 }

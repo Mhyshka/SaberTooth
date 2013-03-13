@@ -26,4 +26,6 @@ public class ChannelGroup extends ChannelTree{
 	public void setChildren(Vector<Long> children) {
 		this.children = children;
 	}
+	
+
 }

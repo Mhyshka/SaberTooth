@@ -15,6 +15,7 @@ import java.awt.event.WindowEvent;
 import java.util.HashMap;
 import java.util.Vector;
 
+import javax.swing.DefaultListModel;
 import javax.swing.GroupLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -38,6 +39,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreePath;
 
 import run.Controller;
 import data.Channel;
@@ -49,7 +51,7 @@ public class MainView extends JFrame{
 	private JFrame frame;
 	private JPanel topPanel,  messagePanel, toolPanel, leftPanel, midPanel, connectionPanel, serverNamePanel, loginPanel, rightPanel;
 	private JTabbedPane chatPanel;
-	private JScrollPane channelsPanel, channelsUserPanel, usersPanel;
+	private JScrollPane channelsPanel, channelsUserPanel, usersListPanel;
 	
 	private JTextField txtServerIp, txtServerPort, txtNickname, txtMessage;
 	private JLabel lbServerName;
@@ -62,7 +64,8 @@ public class MainView extends JFrame{
 	private JButton btnConnect,btnLogin,btnSend;
 	
 	private JTree channels, userChannels;
-	private JList users;
+	private JList<String> usersList;
+	private DefaultListModel<String> usersListModel;
 	
 	private Controller ctrl;
 	
@@ -121,6 +124,36 @@ public class MainView extends JFrame{
 		txtServerPort.setEnabled(false);
 	}
 	
+	public long getClickedChannelId(MouseEvent event){
+		long channelId;
+		
+		TreePath path = channels.getPathForLocation((int)event.getPoint().getX(), (int)event.getPoint().getY());
+		if ( path != null){
+			DefaultMutableTreeNode node = (DefaultMutableTreeNode)path.getLastPathComponent();
+			Object object = node.getUserObject();
+			channelId = ((ChannelTree)object).getId();
+		}
+		else
+			channelId = 0;
+		
+		return channelId;
+	}
+	
+	public long getSelectedChannelId() {
+		long channelId;
+		
+		TreePath path = channels.getSelectionPath();
+		if ( path != null){
+			DefaultMutableTreeNode node = (DefaultMutableTreeNode)path.getLastPathComponent();
+			Object object = node.getUserObject();
+			channelId = ((ChannelTree)object).getId();
+		}
+		else
+			channelId = 0;
+		
+		return channelId;
+	}
+	
 	public void initActionListener(){
 		connect = new ActionListener(){		@Override
 			public void actionPerformed(ActionEvent arg0) {
@@ -160,7 +193,7 @@ public class MainView extends JFrame{
 
 			@Override
 			public void actionPerformed(ActionEvent arg0){
-				// TODO Recup de l'id du chan.
+				// TODO Recup de l'id du chan actif ( Onglet selectionné ).
 				long chanId = 1;
 				ctrl.sendMessage(txtMessage.getText(),chanId);
 				txtMessage.setText("");
@@ -183,6 +216,33 @@ public class MainView extends JFrame{
 		channels.setBorder(UIManager.getBorder("ComboBox.border"));
 		channelsPanel = new JScrollPane(channels);
 		channelsPanel.setMaximumSize(new Dimension(150,1000));
+		
+		channels.addMouseListener(new MouseAdapter(){
+			@Override
+			public void mousePressed(MouseEvent event){
+				super.mousePressed(event);
+				if(SwingUtilities.isLeftMouseButton(event) && event.getClickCount()==1){
+
+					long channelId = getClickedChannelId(event);
+					updateUsers(ctrl.listUsernames(channelId));
+					if(channelId == 0)
+						channels.setSelectionPath(null);
+				}
+			}
+			public void mouseReleased(MouseEvent event){
+				super.mouseReleased(event);
+				if(SwingUtilities.isLeftMouseButton(event) && event.getClickCount()==2){
+
+					long channelId = getClickedChannelId(event);
+					if(!ctrl.isLinkedToChannel(channelId))
+						ctrl.sendJoinned(channelId);
+				}
+				else if(SwingUtilities.isRightMouseButton(event)){
+					// TODO
+					// Ouvrir un menu pour quitter le chan, le rejoindre, afficher ses infos, le supprimer, le donner etc...
+				}
+			}
+		});
 	}
 	
 	public void initChannelsUserPanel(){
@@ -194,6 +254,28 @@ public class MainView extends JFrame{
 		userChannels.setBorder(UIManager.getBorder("ComboBox.border"));
 		channelsUserPanel = new JScrollPane(userChannels);
 		channelsUserPanel.setMaximumSize(new Dimension(150,1000));
+		userChannels.addMouseListener(new MouseAdapter(){
+			@Override
+			public void mousePressed(MouseEvent event){
+				super.mousePressed(event);
+				if(SwingUtilities.isLeftMouseButton(event) && event.getClickCount()==1){
+					// TODO recupération des events des channels
+					// Afficher les usersList de ce chan ou de ce changroup.
+				}
+			}
+			public void mouseReleased(MouseEvent event){
+				super.mouseReleased(event);
+				if(SwingUtilities.isLeftMouseButton(event) && event.getClickCount()==2){
+					// TODO
+					// Ouvrir la fenetre du chan
+				}
+				else if(SwingUtilities.isRightMouseButton(event)){
+
+					// TODO
+					// Ouvrir un menu pour quitter le chan, afficher ses infos, le supprimer, le donner etc...
+				}
+			}
+		});
 	}
 	
 	public void initChatPanel(){
@@ -405,17 +487,16 @@ public class MainView extends JFrame{
 
 		midPanel.setLayout(layout);
 	}
-	
 	public void initRightPanel(){
 		initUsersPanel();
 		
 		rightPanel = new JPanel();
 		GroupLayout layout = new GroupLayout(rightPanel);
 		layout.setHorizontalGroup(layout.createSequentialGroup().addGap(5)
-																.addComponent(usersPanel)
+																.addComponent(usersListPanel)
 																.addGap(5));
 		layout.setVerticalGroup(layout.createSequentialGroup().addGap(5)
-																.addComponent(usersPanel)
+																.addComponent(usersListPanel)
 																.addGap(5));
 		rightPanel.setLayout(layout);
 		rightPanel.setPreferredSize(new Dimension(150,-1));
@@ -434,6 +515,7 @@ public class MainView extends JFrame{
 		serverNamePanel.setLayout(layout);
 		serverNamePanel.add(lbServerName);
 	}
+	
 	public void initState(){
 		btnConnect.setText("Connect");
 		btnConnect.removeActionListener(connect);
@@ -490,14 +572,15 @@ public class MainView extends JFrame{
 	
 		topPanel.setLayout(layout);
 	}
-	
+
 	public void initUsersPanel(){
-		// TODO
-		// Initialisé la liste des users proprement.
-		users = new JList();
-		users.setBorder(UIManager.getBorder("ComboBox.border"));
+		usersList = new JList<String>();
+		usersListModel = new DefaultListModel<String>();
+		usersList.setModel(usersListModel);
 		
-		usersPanel = new JScrollPane(users);
+		usersList.setBorder(UIManager.getBorder("ComboBox.border"));
+		
+		usersListPanel = new JScrollPane(usersList);
 	}
 	
 	public void loggedState(){
@@ -513,7 +596,7 @@ public class MainView extends JFrame{
 		
 		txtNickname.setEnabled(false);
 	}
-
+	
 	public void loggingState(){
 		btnConnect.removeActionListener(disconnect);
 		btnConnect.removeActionListener(connect);
@@ -529,7 +612,7 @@ public class MainView extends JFrame{
 	private void newNode(DefaultMutableTreeNode parent, ChannelTree chTree){
 		if(chTree instanceof ChannelGroup){
 			ChannelGroup group = (ChannelGroup)chTree;
-			DefaultMutableTreeNode node = new DefaultMutableTreeNode(group.getName());
+			DefaultMutableTreeNode node = new DefaultMutableTreeNode(group);
 			parent.add(node);
 			for(long id : group.getChildren()){
 				newNode(node, ctrl.getChannel(id));
@@ -537,7 +620,8 @@ public class MainView extends JFrame{
 		}
 		else if(chTree instanceof Channel){
 			Channel ch = (Channel)chTree;
-			DefaultMutableTreeNode node = new DefaultMutableTreeNode(ch.getName());
+			DefaultMutableTreeNode node = new DefaultMutableTreeNode(ch);
+			node.setAllowsChildren(false);
 			parent.add(node);
 		}
 	}
@@ -569,23 +653,6 @@ public class MainView extends JFrame{
 			newNode(root, ctrl.getChannel(id));
 		}
 		((DefaultTreeModel)channels.getModel()).setRoot(root);
-		channels.addMouseListener(new MouseAdapter(){
-			@Override
-			public void mouseReleased(MouseEvent event){
-				if(SwingUtilities.isLeftMouseButton(event) && event.getClickCount()==1){
-					// TODO recupération des events des channels
-					// Afficher les users de ce chan ou de ce changroup.
-				}
-				else if(SwingUtilities.isLeftMouseButton(event) && event.getClickCount()==1){
-					// TODO
-					// Rejoindre le chan et/ou ouvrir le
-				}
-				else if(SwingUtilities.isRightMouseButton(event)){
-					// TODO
-					// Ouvrir un menu pour quitter le chan, le rejoindre, afficher ses infos, le supprimer, le donner etc...
-				}
-			}
-		});
 	}
 	
 	public void updateUserChannels(Vector<Long> channels){
@@ -595,22 +662,13 @@ public class MainView extends JFrame{
 			newNode(root, ctrl.getChannel(id));
 		}
 		((DefaultTreeModel)userChannels.getModel()).setRoot(root);
-		userChannels.addMouseListener(new MouseAdapter(){
-			@Override
-			public void mouseReleased(MouseEvent event){
-				if(SwingUtilities.isLeftMouseButton(event) && event.getClickCount()==1){
-					// TODO recupération des events des channels
-					// Afficher les users de ce chan ou de ce changroup.
-				}
-				else if(SwingUtilities.isLeftMouseButton(event) && event.getClickCount()==1){
-					// TODO
-					// Ouvrir la fenetre du chan
-				}
-				else if(SwingUtilities.isRightMouseButton(event)){
-					// TODO
-					// Ouvrir un menu pour quitter le chan, afficher ses infos, le supprimer, le donner etc...
-				}
-			}
-		});
+	}
+
+	public void updateUsers(Vector<String> usernames) {
+		this.usersListModel.clear();
+		for(String username : usernames){
+			usersListModel.addElement(username);
+		}
+		usersList.setModel(usersListModel);
 	}
 }
