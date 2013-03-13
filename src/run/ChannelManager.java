@@ -7,7 +7,6 @@ import java.util.Vector;
 import data.Channel;
 import data.ChannelGroup;
 import data.ChannelTree;
-import data.User;
 
 public class ChannelManager {
 	private static ChannelManager manager;
@@ -21,9 +20,6 @@ public class ChannelManager {
 	}
 	private HashMap<Long,ChannelTree> channelTree;
 	private Controller ctrl;
-	
-	
-	private User user;
 	
 	private ChannelManager(Controller ctrl){
 		this.ctrl = ctrl;
@@ -39,40 +35,17 @@ public class ChannelManager {
 		return channelTree;
 	}
 	
-	public User getUser(){
-		return user;
-	}
-	
-	public Vector<Long> getUserChannels(){
-		return getUser().getChannels();
-	}
-	
 	public boolean isLinkedToChannel(long channelId) {
-		return user.getChannels().contains(channelId);
+		return ctrl.getUser().getChannels().contains(channelId);
 	}
 	
 	public void linkUserToChannel(String username, long channelId){
 		if(getChannels().containsKey(channelId)){
-			if(username.equals(getUser().getUsername())){
-				getUser().addChannel(channelId);
+			if(username.equals(ctrl.getUser().getUsername())){
+				ctrl.getUser().addChannel(channelId);
 				ctrl.openChannelView(channelId);
 			}
 			((Channel)getChannel(channelId)).addUser(username);
-			ctrl.updateUserChannels();
-			ctrl.updateUsersList(channelId);
-		}
-		else{
-			ctrl.sendChannels();
-		}
-	}
-	
-	public void unlinkUserToChannel(String username, long channelId){
-		if(getChannels().containsKey(channelId)){
-			if(username.equals(getUser().getUsername())){
-				getUser().removeChannel(channelId);
-				ctrl.closeChannelView(channelId);
-			}
-			((Channel)getChannel(channelId)).removeUser(username);
 			ctrl.updateUserChannels();
 			ctrl.updateUsersList(channelId);
 		}
@@ -108,18 +81,11 @@ public class ChannelManager {
 			ctrl.sendNewChannel(newChannel);
 	}
 	
-	public void newUserChannel(long newChannelId){
-		if(!getUserChannels().contains(newChannelId)){
-			getUserChannels().add(newChannelId);
-			ctrl.updateUserChannels();
-		}
-	}
-	
 	public void removeChannel(long channelId){
 		if(getChannel(channelId) instanceof Channel){
 			getChannel(channelId).getParent().removeChild(channelId);
 			if(channelTree.remove(channelId) != null){
-				removeUserChannel(channelId);
+				ctrl.removeUserChannel(channelId);
 				ctrl.updateChannels();
 			}
 		}
@@ -131,22 +97,11 @@ public class ChannelManager {
 			ctrl.sendLeft(channelId);
 	}
 	
-	public void removeUserChannel(long rmChannelId){
-		if(getUserChannels().contains(rmChannelId)){
-			getUserChannels().removeElement(rmChannelId);
-			ctrl.updateUserChannels();
-		}
-	}
-	
 	public void reset(){
 		channelTree = new HashMap<Long, ChannelTree>();
-		if(getUser()!=null)
-			getUser().setChannels(new Vector<Long>());
+		if(ctrl.getUser()!=null)
+			ctrl.getUser().setChannels(new Vector<Long>());
 		ctrl.resetJTrees();
-	}
-	
-	public void resetUser(){
-		user = null;
 	}
 	
 	public void rmChannel(long rmChannelId){
@@ -165,14 +120,20 @@ public class ChannelManager {
 		channelTree = chTree;
 		ctrl.updateChannels();
 	}
-
-	public void setUser(User user){
-		this.user = user;
-	}
 	
-	public void setUserChannels(Vector<Long> channelsId){
-		getUser().setChannels(channelsId);
-		ctrl.updateUserChannels();
+	public void unlinkUserToChannel(String username, long channelId){
+		if(getChannels().containsKey(channelId)){
+			if(username.equals(ctrl.getUser().getUsername())){
+				ctrl.getUser().removeChannel(channelId);
+				ctrl.closeChannelView(channelId);
+			}
+			((Channel)getChannel(channelId)).removeUser(username);
+			ctrl.updateUserChannels();
+			ctrl.updateUsersList(channelId);
+		}
+		else{
+			ctrl.sendChannels();
+		}
 	}
 	
 	private void vectorUsers(long chanId, Vector<String> users){

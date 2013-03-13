@@ -24,6 +24,7 @@ public class Controller {
 	private ConnectionManager connectionManager;
 	private RequestManager requestManager;
 	private ChannelManager channelManager;
+	private UserManager userManager;
 
 	public Controller(){
 		mainView = new MainView(this);
@@ -31,6 +32,7 @@ public class Controller {
 		connectionManager = ConnectionManager.getInstance(this);
 		requestManager = RequestManager.getInstance(this);
 		channelManager = ChannelManager.getInstance(this);
+		userManager = UserManager.getInstance(this);
 	}
 	
 	public void bannedIp(){
@@ -111,7 +113,7 @@ public class Controller {
 	}
 	
 	public User getUser(){
-		return channelManager.getUser();
+		return userManager.getUser();
 	}
 	
 	public boolean isClosed(){
@@ -185,6 +187,10 @@ public class Controller {
 		channelManager.removeChannel(channelId);
 	}
 	
+	public void removeUserChannel(long channelId) {
+		userManager.removeUserChannel(channelId);
+	}
+	
 	public void resetChannels(){
 		channelManager.reset();
 	}
@@ -192,10 +198,10 @@ public class Controller {
 	public void resetJTrees(){
 		mainView.resetJTrees();
 	}
-	
 	public void resetUser(){
-		channelManager.resetUser();
+		userManager.resetUser();
 	}
+	
 	public void sendChannels(){
 		requestManager.sendChannels();
 	}
@@ -239,9 +245,9 @@ public class Controller {
 	}
 	
 	public void setUser(User user){
-		channelManager.setUser(user);
+		userManager.setUser(user);
 	}
-	
+
 	public void updateChannels(){
 		mainView.updateChannels();
 	}
