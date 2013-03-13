@@ -1,6 +1,7 @@
 package view;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -28,6 +29,7 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
@@ -38,6 +40,7 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 
@@ -70,6 +73,31 @@ public class MainView extends JFrame{
 	private Controller ctrl;
 	
 	private ActionListener connect, disconnect, login, logout, send;
+	
+	private class CustomIconRenderer extends DefaultTreeCellRenderer {
+	    ImageIcon chanIcon;
+	    ImageIcon groupIcon;
+
+	    public CustomIconRenderer() {
+	        chanIcon = new ImageIcon(CustomIconRenderer.class.getResource("/images/defaultIcon.gif"));
+	        groupIcon = new ImageIcon(CustomIconRenderer.class.getResource("/images/specialIcon.gif"));
+	    }
+
+	    public Component getTreeCellRendererComponent(JTree tree,
+	      Object value,boolean sel,boolean expanded,boolean leaf,
+	      int row,boolean hasFocus) {
+
+	        super.getTreeCellRendererComponent(tree, value, sel, 
+	          expanded, leaf, row, hasFocus);
+
+	        if (((DefaultMutableTreeNode)value).getChildCount() != 0) {
+	            setIcon(groupIcon);
+	        } else {
+	            setIcon(chanIcon);
+	        } 
+	        return this;
+	    }
+	}
 	
 	public MainView(Controller newCtrl) {
 		super();
@@ -214,6 +242,7 @@ public class MainView extends JFrame{
 		channels = new JTree(treeModel);
 		channels.setRootVisible(false);
 		channels.setBorder(UIManager.getBorder("ComboBox.border"));
+		//channels.setCellRenderer(new CustomIconRenderer());
 		channelsPanel = new JScrollPane(channels);
 		channelsPanel.setMaximumSize(new Dimension(150,1000));
 		
@@ -238,8 +267,31 @@ public class MainView extends JFrame{
 						ctrl.sendJoinned(channelId);
 				}
 				else if(SwingUtilities.isRightMouseButton(event)){
-					// TODO
-					// Ouvrir un menu pour quitter le chan, le rejoindre, afficher ses infos, le supprimer, le donner etc...
+
+					final long channelId = getClickedChannelId(event);
+					if(ctrl.getChannel(channelId) instanceof Channel){
+						JPopupMenu channelPopup = new JPopupMenu();
+						if(!ctrl.isLinkedToChannel(channelId)){
+							JMenuItem item = new JMenuItem("Rejoindre");
+							item.addActionListener(new ActionListener(){
+								@Override
+								public void actionPerformed(ActionEvent arg0) {
+									ctrl.sendJoinned(channelId);
+								}});
+							channelPopup.add(item);
+						}
+						else{
+							JMenuItem item = new JMenuItem("Quitter");
+							item.addActionListener(new ActionListener(){
+								@Override
+								public void actionPerformed(ActionEvent arg0) {
+									ctrl.sendLeft(channelId);
+								}});
+							channelPopup.add(item);
+						}
+						// TODO Gestion de la suppression, du don et l'affichage de ses infos.
+						channelPopup.show(channels,event.getX(), event.getY());
+					}
 				}
 			}
 		});
@@ -626,6 +678,27 @@ public class MainView extends JFrame{
 		}
 	}
 	
+	private void newNode(DefaultMutableTreeNode parent, ChannelTree chTree, Vector<Long> userChannels, Vector<Long> parentIds){
+		if(chTree instanceof ChannelGroup){
+			ChannelGroup group = (ChannelGroup)chTree;
+			if(parentIds.contains(group.getId())){
+				DefaultMutableTreeNode node = new DefaultMutableTreeNode(group);
+				parent.add(node);
+				for(long id : group.getChildren()){
+					newNode(node, ctrl.getChannel(id), userChannels, parentIds);
+				}
+			}
+		}
+		else if(chTree instanceof Channel){
+			Channel ch = (Channel)chTree;
+			if(userChannels.contains(ch.getId())){
+				DefaultMutableTreeNode node = new DefaultMutableTreeNode(ch);
+				node.setAllowsChildren(false);
+				parent.add(node);
+			}
+		}
+	}
+	
 	public void openChannelView(long channelId){
 		if(!channelViews.containsKey(channelId)){
 			// TODO
@@ -656,10 +729,18 @@ public class MainView extends JFrame{
 	}
 	
 	public void updateUserChannels(Vector<Long> channels){
+		Vector<Long> parentIds = new Vector<Long>();
+		for(long id : channels){
+			while(id != 0){
+				id = ctrl.getChannel(id).getParent().getId();
+				if(!parentIds.contains(id))
+					parentIds.add(id);
+			}
+		}
 		DefaultMutableTreeNode root = null;
 		root = new DefaultMutableTreeNode("root");
-		for(long id : channels){
-			newNode(root, ctrl.getChannel(id));
+		for(long id : ((ChannelGroup)ctrl.getChannel(0)).getChildren()){
+			newNode(root, ctrl.getChannel(id), channels, parentIds);
 		}
 		((DefaultTreeModel)userChannels.getModel()).setRoot(root);
 	}
