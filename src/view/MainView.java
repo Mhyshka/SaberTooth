@@ -5,6 +5,8 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Image;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
@@ -54,7 +56,7 @@ public class MainView extends JFrame{
 	private JFrame frame;
 	private JPanel topPanel,  messagePanel, toolPanel, leftPanel, midPanel, connectionPanel, serverNamePanel, loginPanel, rightPanel;
 	private JTabbedPane chatPanel;
-	private JScrollPane channelsPanel, channelsUserPanel, usersListPanel;
+	private JScrollPane channelsPanel, userChannelsPanel, usersListPanel;
 	
 	private JTextField txtServerIp, txtServerPort, txtNickname, txtMessage;
 	private JLabel lbServerName;
@@ -75,12 +77,17 @@ public class MainView extends JFrame{
 	private ActionListener connect, disconnect, login, logout, send;
 	
 	private class CustomIconRenderer extends DefaultTreeCellRenderer {
-	    ImageIcon chanIcon;
+		private static final long serialVersionUID = 8871365866896250888L;
+		ImageIcon chanIcon;
+	    ImageIcon openedIcon;
+	    ImageIcon emptyIcon;
 	    ImageIcon groupIcon;
 
 	    public CustomIconRenderer() {
-	        chanIcon = new ImageIcon(CustomIconRenderer.class.getResource("/images/defaultIcon.gif"));
-	        groupIcon = new ImageIcon(CustomIconRenderer.class.getResource("/images/specialIcon.gif"));
+	        chanIcon = new ImageIcon("res/channel.png");
+	        groupIcon = new ImageIcon("res/group.png");
+	        openedIcon = new ImageIcon("res/opened.png");
+	        emptyIcon = new ImageIcon("res/empty.png");
 	    }
 
 	    public Component getTreeCellRendererComponent(JTree tree,
@@ -90,8 +97,14 @@ public class MainView extends JFrame{
 	        super.getTreeCellRendererComponent(tree, value, sel, 
 	          expanded, leaf, row, hasFocus);
 
-	        if (((DefaultMutableTreeNode)value).getChildCount() != 0) {
-	            setIcon(groupIcon);
+	        if (((DefaultMutableTreeNode)value).getUserObject() instanceof ChannelGroup) {
+	        	if(((DefaultMutableTreeNode)value).getChildCount() == 0){
+	        		setIcon(emptyIcon);
+	        	}
+	        	else{
+		            setOpenIcon(openedIcon);
+		            setClosedIcon(groupIcon);
+	        	}
 	        } else {
 	            setIcon(chanIcon);
 	        } 
@@ -104,7 +117,10 @@ public class MainView extends JFrame{
 		ctrl = newCtrl;
 		frame = this;
 		channelViews = new HashMap<Long,JTextPane>();
-
+		
+		Image im = Toolkit.getDefaultToolkit().getImage("res/sabertooth.png");
+		setIconImage(im);
+		setTitle("SaberTooth");
 		initFrame();
 		initActionListener();
 		initState();
@@ -242,7 +258,7 @@ public class MainView extends JFrame{
 		channels = new JTree(treeModel);
 		channels.setRootVisible(false);
 		channels.setBorder(UIManager.getBorder("ComboBox.border"));
-		//channels.setCellRenderer(new CustomIconRenderer());
+		channels.setCellRenderer(new CustomIconRenderer());
 		channelsPanel = new JScrollPane(channels);
 		channelsPanel.setMaximumSize(new Dimension(150,1000));
 		
@@ -297,15 +313,17 @@ public class MainView extends JFrame{
 		});
 	}
 	
-	public void initChannelsUserPanel(){
+	public void inituserChannelsPanel(){
 		DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode("Root Node");
 		DefaultTreeModel treeModel = new DefaultTreeModel(rootNode);
 		
 		userChannels = new JTree(treeModel);
 		userChannels.setRootVisible(false);
 		userChannels.setBorder(UIManager.getBorder("ComboBox.border"));
-		channelsUserPanel = new JScrollPane(userChannels);
-		channelsUserPanel.setMaximumSize(new Dimension(150,1000));
+		userChannels.setCellRenderer(new CustomIconRenderer());
+		userChannelsPanel = new JScrollPane(userChannels);
+		userChannelsPanel.setMaximumSize(new Dimension(150,1000));
+
 		userChannels.addMouseListener(new MouseAdapter(){
 			@Override
 			public void mousePressed(MouseEvent event){
@@ -408,7 +426,7 @@ public class MainView extends JFrame{
 	public void initLeftPanel(){
 		initToolPanel();
 		initChannelsPanel();
-		initChannelsUserPanel();
+		inituserChannelsPanel();
 		
 		leftPanel = new JPanel();
 		GroupLayout layout = new GroupLayout(leftPanel);
@@ -418,12 +436,12 @@ public class MainView extends JFrame{
 		layout.setHorizontalGroup(layout.createSequentialGroup().addGap(5)
 																.addGroup(layout.createParallelGroup().addComponent(toolPanel)
 																										.addComponent(channelsPanel)
-																										.addComponent(channelsUserPanel))
+																										.addComponent(userChannelsPanel))
 																.addGap(5));
 		layout.setVerticalGroup(layout.createSequentialGroup().addGap(5)
 																.addComponent(toolPanel)
 																.addComponent(channelsPanel)
-																.addComponent(channelsUserPanel)
+																.addComponent(userChannelsPanel)
 																.addGap(5));
 		leftPanel.setLayout(layout);
 		leftPanel.setMaximumSize(new Dimension(50,0));
@@ -701,12 +719,10 @@ public class MainView extends JFrame{
 	
 	public void openChannelView(long channelId){
 		if(!channelViews.containsKey(channelId)){
-			// TODO
-			// Réglage de la fenetre en fonction des infos dont on dispose.
-			
-			//Channel chan = (Channel)ctrl.getChannel(channelId); // A décommenter pour enlever les warnings.
-			channelViews.put(channelId,new JTextPane());
-			chatPanel.add(channelViews.get(channelId));
+			JTextPane newView = new JTextPane();
+			newView.setEditable(false);
+			channelViews.put(channelId,newView);
+			chatPanel.add(ctrl.getChannel(channelId).getName(),channelViews.get(channelId));
 		}
 	}
 	
