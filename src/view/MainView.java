@@ -56,7 +56,7 @@ public class MainView extends JFrame{
 	private JFrame frame;
 	private JPanel topPanel,  messagePanel, toolPanel, leftPanel, midPanel, connectionPanel, serverNamePanel, loginPanel, rightPanel;
 	private JTabbedPane chatPanel;
-	private JScrollPane channelsPanel, userChannelsPanel, usersListPanel;
+	private JScrollPane channelsPanel, usersListPanel;
 	
 	private JTextField txtServerIp, txtServerPort, txtNickname, txtMessage;
 	private JLabel lbServerName;
@@ -68,7 +68,7 @@ public class MainView extends JFrame{
 	
 	private JButton btnConnect,btnLogin,btnSend;
 	
-	private JTree channels, userChannels;
+	private JTree channels;
 	private JList<String> usersList;
 	private DefaultListModel<String> usersListModel;
 	
@@ -78,16 +78,14 @@ public class MainView extends JFrame{
 	
 	private class CustomIconRenderer extends DefaultTreeCellRenderer {
 		private static final long serialVersionUID = 8871365866896250888L;
-		ImageIcon chanIcon;
-	    ImageIcon openedIcon;
-	    ImageIcon emptyIcon;
-	    ImageIcon groupIcon;
+		ImageIcon chanIcon, openedIcon, emptyIcon, groupIcon, joinnedIcon;
 
 	    public CustomIconRenderer() {
 	        chanIcon = new ImageIcon("res/channel.png");
 	        groupIcon = new ImageIcon("res/group.png");
 	        openedIcon = new ImageIcon("res/opened.png");
 	        emptyIcon = new ImageIcon("res/empty.png");
+	        joinnedIcon = new ImageIcon("res/joinned.png");
 	    }
 
 	    public Component getTreeCellRendererComponent(JTree tree,
@@ -106,6 +104,9 @@ public class MainView extends JFrame{
 		            setClosedIcon(groupIcon);
 	        	}
 	        } else {
+	        	//if(){
+	        		
+	        	//}
 	            setIcon(chanIcon);
 	        } 
 	        return this;
@@ -283,7 +284,7 @@ public class MainView extends JFrame{
 						ctrl.sendJoinned(channelId);
 				}
 				else if(SwingUtilities.isRightMouseButton(event)){
-
+					
 					final long channelId = getClickedChannelId(event);
 					if(ctrl.getChannel(channelId) instanceof Channel){
 						JPopupMenu channelPopup = new JPopupMenu();
@@ -308,41 +309,6 @@ public class MainView extends JFrame{
 						// TODO Gestion de la suppression, du don et l'affichage de ses infos.
 						channelPopup.show(channels,event.getX(), event.getY());
 					}
-				}
-			}
-		});
-	}
-	
-	public void inituserChannelsPanel(){
-		DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode("Root Node");
-		DefaultTreeModel treeModel = new DefaultTreeModel(rootNode);
-		
-		userChannels = new JTree(treeModel);
-		userChannels.setRootVisible(false);
-		userChannels.setBorder(UIManager.getBorder("ComboBox.border"));
-		userChannels.setCellRenderer(new CustomIconRenderer());
-		userChannelsPanel = new JScrollPane(userChannels);
-		userChannelsPanel.setMaximumSize(new Dimension(150,1000));
-
-		userChannels.addMouseListener(new MouseAdapter(){
-			@Override
-			public void mousePressed(MouseEvent event){
-				super.mousePressed(event);
-				if(SwingUtilities.isLeftMouseButton(event) && event.getClickCount()==1){
-					// TODO recupération des events des channels
-					// Afficher les usersList de ce chan ou de ce changroup.
-				}
-			}
-			public void mouseReleased(MouseEvent event){
-				super.mouseReleased(event);
-				if(SwingUtilities.isLeftMouseButton(event) && event.getClickCount()==2){
-					// TODO
-					// Ouvrir la fenetre du chan
-				}
-				else if(SwingUtilities.isRightMouseButton(event)){
-
-					// TODO
-					// Ouvrir un menu pour quitter le chan, afficher ses infos, le supprimer, le donner etc...
 				}
 			}
 		});
@@ -426,7 +392,6 @@ public class MainView extends JFrame{
 	public void initLeftPanel(){
 		initToolPanel();
 		initChannelsPanel();
-		inituserChannelsPanel();
 		
 		leftPanel = new JPanel();
 		GroupLayout layout = new GroupLayout(leftPanel);
@@ -435,13 +400,11 @@ public class MainView extends JFrame{
 		
 		layout.setHorizontalGroup(layout.createSequentialGroup().addGap(5)
 																.addGroup(layout.createParallelGroup().addComponent(toolPanel)
-																										.addComponent(channelsPanel)
-																										.addComponent(userChannelsPanel))
+																										.addComponent(channelsPanel))
 																.addGap(5));
 		layout.setVerticalGroup(layout.createSequentialGroup().addGap(5)
 																.addComponent(toolPanel)
 																.addComponent(channelsPanel)
-																.addComponent(userChannelsPanel)
 																.addGap(5));
 		leftPanel.setLayout(layout);
 		leftPanel.setMaximumSize(new Dimension(50,0));
@@ -467,7 +430,6 @@ public class MainView extends JFrame{
 					txtNickname.setText("Nickname...");
 			}
 		});
-		
 		btnLogin = new JButton("Login");
 		
 		loginPanel = new JPanel();
@@ -727,7 +689,6 @@ public class MainView extends JFrame{
 	}
 	
 	public void resetJTrees(){
-		((DefaultTreeModel)userChannels.getModel()).setRoot(new DefaultMutableTreeNode("root"));
 		((DefaultTreeModel)channels.getModel()).setRoot(new DefaultMutableTreeNode("root"));
 	}
 	
@@ -744,7 +705,7 @@ public class MainView extends JFrame{
 		((DefaultTreeModel)channels.getModel()).setRoot(root);
 	}
 	
-	public void updateUserChannels(Vector<Long> channels){
+/*	public void updateUserChannels(Vector<Long> channels){
 		Vector<Long> parentIds = new Vector<Long>();
 		for(long id : channels){
 			while(id != 0){
@@ -759,7 +720,7 @@ public class MainView extends JFrame{
 			newNode(root, ctrl.getChannel(id), channels, parentIds);
 		}
 		((DefaultTreeModel)userChannels.getModel()).setRoot(root);
-	}
+	}*/
 
 	public void updateUsers(Vector<String> usernames) {
 		this.usersListModel.clear();

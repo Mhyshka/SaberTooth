@@ -252,10 +252,6 @@ public class Controller {
 		mainView.updateChannels();
 	}
 
-	public void updateUserChannels(){
-		mainView.updateUserChannels(getUser().getChannels());
-	}
-
 	public void updateUsersList(long channelId) {
 		boolean parent = false;
 		ChannelTree chan = getChannel(channelId);
@@ -278,5 +274,9 @@ public class Controller {
 		setServerName(serverName);
 		mainView.setServerName(serverName);
 		mainView.connectedState();
+	}
+	
+	public void userJoinned(long channelId){
+		//mainView.setJoinned(channelId);
 	}
 }

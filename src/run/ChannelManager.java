@@ -43,10 +43,10 @@ public class ChannelManager {
 		if(getChannels().containsKey(channelId)){
 			if(username.equals(ctrl.getUser().getUsername())){
 				ctrl.getUser().addChannel(channelId);
+				ctrl.userJoinned(channelId);
 				ctrl.openChannelView(channelId);
 			}
 			((Channel)getChannel(channelId)).addUser(username);
-			ctrl.updateUserChannels();
 			ctrl.updateUsersList(channelId);
 		}
 		else{
@@ -128,7 +128,6 @@ public class ChannelManager {
 				ctrl.closeChannelView(channelId);
 			}
 			((Channel)getChannel(channelId)).removeUser(username);
-			ctrl.updateUserChannels();
 			ctrl.updateUsersList(channelId);
 		}
 		else{

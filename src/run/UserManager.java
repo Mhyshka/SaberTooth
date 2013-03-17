@@ -35,14 +35,12 @@ public class UserManager {
 	public void newUserChannel(long newChannelId){
 		if(!getUserChannels().contains(newChannelId)){
 			getUserChannels().add(newChannelId);
-			ctrl.updateUserChannels();
 		}
 	}
 	
 	public void removeUserChannel(long rmChannelId){
 		if(getUserChannels().contains(rmChannelId)){
 			getUserChannels().removeElement(rmChannelId);
-			ctrl.updateUserChannels();
 		}
 	}
 	
@@ -56,6 +54,5 @@ public class UserManager {
 	
 	public void setUserChannels(Vector<Long> channelsId){
 		getUser().setChannels(channelsId);
-		ctrl.updateUserChannels();
 	}
 }
