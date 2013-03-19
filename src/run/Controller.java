@@ -9,7 +9,6 @@ import javax.swing.JOptionPane;
 import network.ConnectionManager;
 import network.RequestManager;
 import view.MainView;
-import data.Channel;
 import data.ChannelTree;
 import data.Message;
 import data.User;
@@ -166,8 +165,9 @@ public class Controller {
 		requestManager.sendLogout();
 	}
 	
-	public void newChannel(Channel channel){
+	public void newChannel(ChannelTree channel){
 		channelManager.newChannel(channel);
+		mainView.addChannel(channel);
 	}
 	
 	public void newMessage(Message message){
@@ -276,7 +276,7 @@ public class Controller {
 		mainView.connectedState();
 	}
 	
-	public void userJoinned(long channelId){
-		//mainView.setJoinned(channelId);
+	public void repaintChannels(){
+		mainView.repaintChannels();
 	}
 }

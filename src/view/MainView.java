@@ -15,6 +15,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Vector;
 
@@ -45,6 +46,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
+import javax.swing.tree.TreeSelectionModel;
 
 import run.Controller;
 import data.Channel;
@@ -103,11 +105,12 @@ public class MainView extends JFrame{
 		            setOpenIcon(openedIcon);
 		            setClosedIcon(groupIcon);
 	        	}
-	        } else {
-	        	//if(){
-	        		
-	        	//}
-	            setIcon(chanIcon);
+	        } else if(((DefaultMutableTreeNode)value).getUserObject() instanceof Channel){
+	        	Channel tmp = (Channel)(((DefaultMutableTreeNode)value).getUserObject());
+	        	if(tmp.isJoinned())
+	        		setIcon(joinnedIcon);
+	        	else
+	        		setIcon(chanIcon);
 	        } 
 	        return this;
 	    }
@@ -260,6 +263,8 @@ public class MainView extends JFrame{
 		channels.setRootVisible(false);
 		channels.setBorder(UIManager.getBorder("ComboBox.border"));
 		channels.setCellRenderer(new CustomIconRenderer());
+		channels.getSelectionModel().setSelectionMode
+        (TreeSelectionModel.SINGLE_TREE_SELECTION);
 		channelsPanel = new JScrollPane(channels);
 		channelsPanel.setMaximumSize(new Dimension(150,1000));
 		
@@ -267,16 +272,20 @@ public class MainView extends JFrame{
 			@Override
 			public void mousePressed(MouseEvent event){
 				super.mousePressed(event);
+				
 				if(SwingUtilities.isLeftMouseButton(event) && event.getClickCount()==1){
 
 					long channelId = getClickedChannelId(event);
-					updateUsers(ctrl.listUsernames(channelId));
 					if(channelId == 0)
-						channels.setSelectionPath(null);
+						channels.clearSelection();
+					updateUsers(ctrl.listUsernames(channelId));
 				}
 			}
+			
+			@Override
 			public void mouseReleased(MouseEvent event){
 				super.mouseReleased(event);
+				
 				if(SwingUtilities.isLeftMouseButton(event) && event.getClickCount()==2){
 
 					long channelId = getClickedChannelId(event);
@@ -697,12 +706,32 @@ public class MainView extends JFrame{
 	}
 	
 	public void updateChannels() {
-		DefaultMutableTreeNode root = null;
-		root = new DefaultMutableTreeNode("root");
+		DefaultMutableTreeNode root = new DefaultMutableTreeNode("root");
 		for(long id : ((ChannelGroup)ctrl.getChannel(0)).getChildren()){
 			newNode(root, ctrl.getChannel(id));
 		}
 		((DefaultTreeModel)channels.getModel()).setRoot(root);
+	}
+	
+	public void repaintChannels(){
+		channels.repaint();
+	}
+	
+	public void addChannel(ChannelTree chan){
+		DefaultMutableTreeNode root = (DefaultMutableTreeNode)channels.getModel().getRoot();
+		if(chan.getParent().getId() == 0)
+			root.add(new DefaultMutableTreeNode(chan));
+		else{
+			Enumeration<DefaultMutableTreeNode> nodes = root.breadthFirstEnumeration();
+			while(nodes.hasMoreElements()){
+				DefaultMutableTreeNode node = nodes.nextElement();
+				if(node.getUserObject() instanceof ChannelGroup){
+					if(((ChannelGroup)node.getUserObject()).getId() == chan.getParent().getId())
+						node.add(new DefaultMutableTreeNode(chan));
+				}
+			}
+		}
+		channels.repaint();
 	}
 	
 /*	public void updateUserChannels(Vector<Long> channels){

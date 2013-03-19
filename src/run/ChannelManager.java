@@ -43,10 +43,11 @@ public class ChannelManager {
 		if(getChannels().containsKey(channelId)){
 			if(username.equals(ctrl.getUser().getUsername())){
 				ctrl.getUser().addChannel(channelId);
-				ctrl.userJoinned(channelId);
 				ctrl.openChannelView(channelId);
+				((Channel)getChannel(channelId)).setJoinned(true);
 			}
 			((Channel)getChannel(channelId)).addUser(username);
+			ctrl.repaintChannels();
 			ctrl.updateUsersList(channelId);
 		}
 		else{
@@ -72,13 +73,6 @@ public class ChannelManager {
 	
 	public void newChannel(ChannelTree newChannel){
 		channelTree.put(newChannel.getId(), newChannel);
-		ctrl.updateChannels();
-	}
-	
-	public void newChannel(ChannelTree newChannel, boolean notify){
-		newChannel(newChannel);
-		if(notify)
-			ctrl.sendNewChannel(newChannel);
 	}
 	
 	public void removeChannel(long channelId){
@@ -126,8 +120,10 @@ public class ChannelManager {
 			if(username.equals(ctrl.getUser().getUsername())){
 				ctrl.getUser().removeChannel(channelId);
 				ctrl.closeChannelView(channelId);
+				((Channel)getChannel(channelId)).setJoinned(false);
 			}
 			((Channel)getChannel(channelId)).removeUser(username);
+			ctrl.repaintChannels();
 			ctrl.updateUsersList(channelId);
 		}
 		else{
